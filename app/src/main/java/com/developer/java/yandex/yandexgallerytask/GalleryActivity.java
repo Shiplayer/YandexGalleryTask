@@ -44,6 +44,14 @@ public class GalleryActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        Intent intent = getIntent();
+        if(intent != null) {
+            String action = intent.getAction();
+            Uri uri = intent.getData();
+
+            Log.w(TAG, action + " " + uri);
+        }
+
         final AccountManager manager = AccountManager.get(this);
         final Account[] accounts = manager.getAccountsByType("com.yandex.passport");
         final WebView webView = findViewById(R.id.wv_auth);
@@ -70,11 +78,11 @@ public class GalleryActivity extends AppCompatActivity {
                         String url = "https://oauth.yandex.ru/authorize?" +
                                 "response_type=token" +
                                 "&client_id=21c529ce43f3404f88ac68dfc8faa8f9";
-                        /*Intent intent = new Intent(Intent.ACTION_VIEW);
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
                         intent.setData(Uri.parse(url));
-                        startActivity(intent);*/
-                        webView.setVisibility(View.VISIBLE);
-                        webView.loadUrl(url);
+                        startActivity(intent);
+                        //webView.setVisibility(View.VISIBLE);
+                        //webView.loadUrl(url);
 
                         /*manager.getAuthToken(accounts[i], AccountManager.KEY_AUTHTOKEN, null, true, new AccountManagerCallback<Bundle>() {
                             @Override

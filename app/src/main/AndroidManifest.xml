@@ -28,7 +28,7 @@
             </intent-filter>
 
             <intent-filter>
-                <data android:scheme="https" android:host="oauth.yandex.ru" />
+                <data android:scheme="yandexgallerytask" android:host="token" />
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
