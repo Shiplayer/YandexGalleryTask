@@ -1,52 +1,45 @@
 package com.developer.java.yandex.yandexgallerytask;
 
 import android.Manifest;
-import android.accounts.Account;
-import android.accounts.AccountManager;
-import android.accounts.AccountManagerCallback;
-import android.accounts.AccountManagerFuture;
-import android.accounts.AuthenticatorException;
-import android.accounts.OperationCanceledException;
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.ActionMode;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 
-import com.developer.java.yandex.yandexgallerytask.net.YandexCommunication;
+import com.developer.java.yandex.yandexgallerytask.entity.PhotoResponse;
+import com.developer.java.yandex.yandexgallerytask.model.PhotoViewModel;
 
-import java.io.IOException;
+import java.util.List;
 
 public class GalleryActivity extends AppCompatActivity {
     private static final String TAG = GalleryActivity.class.getSimpleName();
     private static final String[] PERMISSIONS = {Manifest.permission.GET_ACCOUNTS};
     private static final String TOKEN_ACCOUNT = "YandexGalleryToken";
     private SharedPreferences sharedPreferences;
+    private PhotoViewModel model;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery);
         sharedPreferences = getPreferences(Context.MODE_PRIVATE);
-
+        model = ViewModelProviders.of(this).get(PhotoViewModel.class);
 
         checkAndRequestPermission(PERMISSIONS);
 
@@ -69,7 +62,17 @@ public class GalleryActivity extends AppCompatActivity {
             getToken();
         else {
             Log.w(TAG, "token = " + token);
-            YandexCommunication.getInstance().getImages(token);
+            model.getPhotoResponses(token).observe(this, new Observer<List<PhotoResponse>>() {
+                @Override
+                public void onChanged(@Nullable List<PhotoResponse> photoResponses) {
+                    if(photoResponses != null)
+                        for(PhotoResponse elem : photoResponses){
+                            Log.w(TAG, elem.toString());
+                        }
+                    else
+                        Log.w(TAG, "onChanged get null object");
+                }
+            });
         }
 
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -137,7 +140,4 @@ public class GalleryActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void getImages() {
-
-    }
 }
