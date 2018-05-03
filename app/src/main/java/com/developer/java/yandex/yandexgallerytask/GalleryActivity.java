@@ -68,7 +68,7 @@ public class GalleryActivity extends AppCompatActivity implements HandleResponse
         if(token.length() == 0)
             getToken();
         else {
-            final GalleryAdapter galleryAdapter = new GalleryAdapter(token);
+            final GalleryAdapter galleryAdapter = new GalleryAdapter(this, token);
             RecyclerView recyclerView = findViewById(R.id.rv_image);
             recyclerView.setAdapter(galleryAdapter);
             recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
