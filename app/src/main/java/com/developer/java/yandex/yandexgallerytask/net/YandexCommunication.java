@@ -36,6 +36,7 @@ public class YandexCommunication {
     private static YandexCommunication mYandexCommunication;
     private static ApiCommunication apiCommunication;
     private static final String TAG = YandexCommunication.class.getSimpleName();
+    private static String oAuth = null;
 
     private YandexCommunication(){
         retrofit = new Retrofit.Builder().baseUrl("https://cloud-api.yandex.net:443")
@@ -59,9 +60,10 @@ public class YandexCommunication {
         OkHttpClient client = new OkHttpClient.Builder().addInterceptor(new Interceptor() {
             @Override
             public okhttp3.Response intercept(Chain chain) throws IOException {
-                return chain.proceed(chain.request()).newBuilder().addHeader("Authorization", auth).build();
+                return chain.proceed(chain.request()).newBuilder().addHeader("Authorization", "OAuth " + auth).build();
             }
         }).build();
+        oAuth = "OAuth " + auth;
         if(mYandexCommunication == null)
             mYandexCommunication = new YandexCommunication(client);
         return mYandexCommunication;
@@ -73,7 +75,7 @@ public class YandexCommunication {
         map.put("sort", "-modified");
         map.put("limit", "200");
         final MutableLiveData<List<PhotoResponse>> listLiveData = new MutableLiveData<>();
-        apiCommunication.getImages(map).enqueue(new Callback<JsonObject>() {
+        apiCommunication.getImages(map, oAuth).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 Log.w(TAG, call.request().url().toString());
@@ -111,7 +113,7 @@ public class YandexCommunication {
         map.put("path", path);
         map.put("field", "href");
         final MutableLiveData<String> link = new MutableLiveData<>();
-        apiCommunication.getLink(map).enqueue(new Callback<JsonObject>() {
+        apiCommunication.getLink(map, oAuth).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 if(response.isSuccessful())
@@ -130,9 +132,9 @@ public class YandexCommunication {
     public interface ApiCommunication{
         @GET("/v1/disk/resources")
         @Headers("Content-Type: application/json; charset=utf-8")
-        public Call<JsonObject> getImages(@QueryMap(encoded = true) Map<String, String> query);
+        public Call<JsonObject> getImages(@QueryMap(encoded = true) Map<String, String> query, @Header("Authorization") String auth);
 
         @GET("/v1/disk/resources/download")
-        public Call<JsonObject> getLink(@QueryMap(encoded = true) Map<String, String> query);
+        public Call<JsonObject> getLink(@QueryMap(encoded = true) Map<String, String> query, @Header("Authorization") String auth);
     }
 }
