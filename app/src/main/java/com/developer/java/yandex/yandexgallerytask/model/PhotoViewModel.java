@@ -13,7 +13,7 @@ public class PhotoViewModel extends ViewModel {
 
     public LiveData<List<PhotoResponse>> getPhotoResponses(String auth){
         if(data == null){
-            data = YandexCommunication.getInstance().getImages(auth);
+            data = YandexCommunication.getInstance().getPhotoResponse(auth);
         }
         return data;
     }

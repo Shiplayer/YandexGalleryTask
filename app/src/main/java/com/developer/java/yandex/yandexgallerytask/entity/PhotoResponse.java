@@ -7,6 +7,7 @@ public class PhotoResponse {
     public String preview;
     public String path;
     public String mime_type;
+    public String link;
 
     @Override
     public String toString() {
@@ -16,6 +17,7 @@ public class PhotoResponse {
                 ", preview='" + preview + '\'' +
                 ", path='" + path + '\'' +
                 ", mime_type='" + mime_type + '\'' +
+                ", link='" + link + '\'' +
                 '}';
     }
 }

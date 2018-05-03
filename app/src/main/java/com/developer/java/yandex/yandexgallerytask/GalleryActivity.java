@@ -51,10 +51,6 @@ public class GalleryActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        RecyclerView recyclerView = findViewById(R.id.rv_image);
-        recyclerView.setAdapter(new GalleryAdapter());
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-        recyclerView.setHasFixedSize(true);
         String token = sharedPreferences.getString(TOKEN_ACCOUNT, "");
         Intent intent = getIntent();
         String action = intent.getAction();
@@ -63,18 +59,22 @@ public class GalleryActivity extends AppCompatActivity {
             Uri uri = intent.getData();
             token = uri.getFragment().split("&")[0].split("=")[1];
             Log.w(TAG, "fragment = " + token);
-
-        FlickrApi.getInstance().getXMLRecentPhoto();
             sharedPreferences.edit().putString(TOKEN_ACCOUNT, token).commit();
             Log.w(TAG, action + " " + uri);
         }
         if(token.length() == 0)
             getToken();
         else {
+            final GalleryAdapter galleryAdapter = new GalleryAdapter(token);
+            RecyclerView recyclerView = findViewById(R.id.rv_image);
+            recyclerView.setAdapter(galleryAdapter);
+            recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+            recyclerView.setHasFixedSize(true);
             Log.w(TAG, "token = " + token);
             model.getPhotoResponses(token).observe(this, new Observer<List<PhotoResponse>>() {
                 @Override
                 public void onChanged(@Nullable List<PhotoResponse> photoResponses) {
+                    galleryAdapter.setData(photoResponses);
                     if(photoResponses != null)
                         for(PhotoResponse elem : photoResponses){
                             Log.w(TAG, elem.toString());
