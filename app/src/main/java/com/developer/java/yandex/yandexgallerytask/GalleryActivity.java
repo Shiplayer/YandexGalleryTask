@@ -1,6 +1,7 @@
 package com.developer.java.yandex.yandexgallerytask;
 
 import android.Manifest;
+import android.arch.lifecycle.MediatorLiveData;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
@@ -30,9 +31,10 @@ import com.developer.java.yandex.yandexgallerytask.api.FlickrApi;
 import com.developer.java.yandex.yandexgallerytask.entity.PhotoResponse;
 import com.developer.java.yandex.yandexgallerytask.model.PhotoViewModel;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class GalleryActivity extends AppCompatActivity {
+public class GalleryActivity extends AppCompatActivity implements HandleResponse {
     private static final String TAG = GalleryActivity.class.getSimpleName();
     private static final String[] PERMISSIONS = {Manifest.permission.GET_ACCOUNTS};
     private static final String TOKEN_ACCOUNT = "YandexGalleryToken";
@@ -59,6 +61,7 @@ public class GalleryActivity extends AppCompatActivity {
             Uri uri = intent.getData();
             token = uri.getFragment().split("&")[0].split("=")[1];
             Log.w(TAG, "fragment = " + token);
+
             sharedPreferences.edit().putString(TOKEN_ACCOUNT, token).commit();
             Log.w(TAG, action + " " + uri);
         }
@@ -75,10 +78,12 @@ public class GalleryActivity extends AppCompatActivity {
                 @Override
                 public void onChanged(@Nullable List<PhotoResponse> photoResponses) {
                     galleryAdapter.setData(photoResponses);
-                    if(photoResponses != null)
+                    if(photoResponses != null){
                         for(PhotoResponse elem : photoResponses){
                             Log.w(TAG, elem.toString());
                         }
+                        setOnHandle();
+                    }
                     else
                         Log.w(TAG, "onChanged get null object");
                 }
@@ -148,5 +153,32 @@ public class GalleryActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void setOnHandle() {
+        List<PhotoResponse> list = model.getPhotoResponses().getValue();
+        if(list == null)
+            return;
+        List<String> link = new ArrayList<>();
+        for(PhotoResponse photo : list){
+            link.add(photo.path.split(":/")[1]);
+        }
+        final List<String> urlLinks = new ArrayList<>();
+        final int sizeOfList = list.size();
+        final MediatorLiveData<String> mediator = model.getLinkImage(link);
+        mediator.observeForever(new Observer<String>() {
+            @Override
+            public void onChanged(@Nullable String s) {
+                urlLinks.add(s);
+                if(urlLinks.size() == sizeOfList)
+                    mediator.removeObserver(this);
+            }
+        });
+        // уведомляем адаптор об изменении данных и используем пикасо, чтоб загрузить картинку просто используя полученный url
+
+        for(String s : urlLinks){
+            Log.w(TAG + "Mediator", s);
+        }
     }
 }

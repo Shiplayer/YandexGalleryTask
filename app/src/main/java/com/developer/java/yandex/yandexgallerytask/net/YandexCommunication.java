@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -38,10 +40,17 @@ public class YandexCommunication {
     private static YandexCommunication mYandexCommunication;
     private static ApiCommunication apiCommunication;
     private static final String TAG = YandexCommunication.class.getSimpleName();
+    private static String oAuth = null;
 
     private YandexCommunication(){
         retrofit = new Retrofit.Builder().baseUrl("https://cloud-api.yandex.net:443")
                 .addConverterFactory(GsonConverterFactory.create()).build();
+        apiCommunication = retrofit.create(ApiCommunication.class);
+    }
+
+    private YandexCommunication(OkHttpClient client){
+        retrofit = new Retrofit.Builder().baseUrl("https://cloud-api.yandex.net:443")
+                .addConverterFactory(GsonConverterFactory.create()).client(client).build();
         apiCommunication = retrofit.create(ApiCommunication.class);
     }
 
@@ -51,16 +60,31 @@ public class YandexCommunication {
         return mYandexCommunication;
     }
 
-    public LiveData<List<PhotoResponse>> getPhotoResponse(final String auth){
+    public static YandexCommunication getInstanceWithClient(final String auth){
+        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(new Interceptor() {
+            @Override
+            public okhttp3.Response intercept(Chain chain) throws IOException {
+                return chain.proceed(chain.request()).newBuilder().addHeader("Authorization", "OAuth " + auth).build();
+            }
+        }).build();
+        oAuth = "OAuth " + auth;
+        if(mYandexCommunication == null)
+            mYandexCommunication = new YandexCommunication(client);
+        return mYandexCommunication;
+    }
+
+    public LiveData<List<PhotoResponse>> getPhotoResponses(){
         Map<String, String> map = new HashMap<>();
         final MediatorLiveData<String> mediatorLiveData = new MediatorLiveData<>();
         map.put("path", "disk:/Фотокамера/");
         map.put("sort", "-modified");
         map.put("limit", "200");
         final MutableLiveData<List<PhotoResponse>> listLiveData = new MutableLiveData<>();
-        apiCommunication.getImages(map, "OAuth " + auth).enqueue(new Callback<JsonObject>() {
+        apiCommunication.getImages(map, oAuth).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                Log.w(TAG, call.request().url().toString());
+                Log.w(TAG, "header: " + call.request().header("Authorization"));
                 JsonObject body = response.body();
                 List<PhotoResponse> photoList;
                 if(body.has("_embedded")){
@@ -94,18 +118,23 @@ public class YandexCommunication {
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
-                Log.w(TAG, "fail: " + t.getMessage());
+                Log.w(TAG, "fail: " + t.getMessage() + "\nurl: " + call.request().url().toString()+
+                "\nheader: " + call.request().header("Authorization"));
             }
         });
         return listLiveData;
     }
 
-    public LiveData<String> getLinks(final String auth, String path){
+    public LiveData<String> getLink(String path){
+        Map<String, String> map = new HashMap<>();
+        map.put("path", path);
+        map.put("field", "href");
         final MutableLiveData<String> link = new MutableLiveData<>();
-        apiCommunication.getLinkOnImage(path, auth).enqueue(new Callback<JsonObject>() {
+        apiCommunication.getLink(map, oAuth).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                link.postValue(response.body().get("href").getAsString());
+                if(response.isSuccessful())
+                    link.postValue(response.body().get("href").getAsString());
             }
 
             @Override
@@ -116,14 +145,13 @@ public class YandexCommunication {
         return link;
     }
 
+
     public interface ApiCommunication{
         @GET("/v1/disk/resources")
         @Headers("Content-Type: application/json; charset=utf-8")
-        public Call<JsonObject> getImages(@QueryMap(encoded = true) Map<String, String> query,
-                                          @Header("Authorization") String OAuth);
+        public Call<JsonObject> getImages(@QueryMap(encoded = true) Map<String, String> query, @Header("Authorization") String auth);
 
         @GET("/v1/disk/resources/download")
-        @Headers("Content-Type: application/json; charset=utf-8")
-        public Call<JsonObject> getLinkOnImage(@Query(value = "path", encoded = true) String path, @Header("Authorization") String OAuth);
+        public Call<JsonObject> getLink(@QueryMap(encoded = true) Map<String, String> query, @Header("Authorization") String auth);
     }
 }
