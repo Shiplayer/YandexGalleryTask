@@ -30,6 +30,7 @@ import com.developer.java.yandex.yandexgallerytask.api.FlickrApi;
 
 import com.developer.java.yandex.yandexgallerytask.entity.PhotoResponse;
 import com.developer.java.yandex.yandexgallerytask.model.PhotoViewModel;
+import com.developer.java.yandex.yandexgallerytask.net.YandexCommunication;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +69,8 @@ public class GalleryActivity extends AppCompatActivity implements HandleResponse
         if(token.length() == 0)
             getToken();
         else {
+            YandexCommunication.setAuth(token).getInstance().getInfo();
+            YandexCommunication.getInstance().lastUpdated();
             final GalleryAdapter galleryAdapter = new GalleryAdapter(this, token);
             RecyclerView recyclerView = findViewById(R.id.rv_image);
             recyclerView.setAdapter(galleryAdapter);

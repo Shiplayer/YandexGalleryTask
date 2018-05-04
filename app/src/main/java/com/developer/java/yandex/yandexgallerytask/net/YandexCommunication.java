@@ -60,6 +60,11 @@ public class YandexCommunication {
         return mYandexCommunication;
     }
 
+    public static YandexCommunication setAuth(String auth){
+        oAuth = "OAuth " + auth;
+        return mYandexCommunication;
+    }
+
     public static YandexCommunication getInstanceWithClient(final String auth){
         OkHttpClient client = new OkHttpClient.Builder().addInterceptor(new Interceptor() {
             @Override
@@ -145,11 +150,55 @@ public class YandexCommunication {
         return link;
     }
 
+    public void lastUpdated(){
+        Map<String, String> map = new HashMap<>();
+        map.put("media_type", "image");
+        map.put("limit", "200");
+        apiCommunication.getLastUpdated(map, oAuth).enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                if(response.isSuccessful()){
+                    JsonArray array= response.body().getAsJsonArray("items");
+                    for(JsonElement el : array){
+                        JsonObject obj = el.getAsJsonObject();
+                        Log.w(TAG, "name = " + obj.get("name").getAsString() + "\n" +
+                            "modified = " + obj.get("modified"));
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+
+            }
+        });
+    }
+
+    public void getInfo(){
+        apiCommunication.getInfo(oAuth).enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                Log.w(TAG, response.body().toString());
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+                t.printStackTrace();
+            }
+        });
+    }
+
 
     public interface ApiCommunication{
+        @GET("/v1/disk/")
+        @Headers("Content-Type: application/json; charset=utf-8")
+        public Call<JsonObject> getInfo(@Header("Authorization") String auth);
         @GET("/v1/disk/resources")
         @Headers("Content-Type: application/json; charset=utf-8")
         public Call<JsonObject> getImages(@QueryMap(encoded = true) Map<String, String> query, @Header("Authorization") String auth);
+        @GET("/v1/disk/resources/last-uploaded")
+        @Headers("Content-Type: application/json; charset=utf-8")
+        public Call<JsonObject> getLastUpdated(@QueryMap(encoded = true) Map<String, String> query, @Header("Authorization") String auth);
 
         @GET("/v1/disk/resources/download")
         public Call<JsonObject> getLink(@QueryMap(encoded = true) Map<String, String> query, @Header("Authorization") String auth);
