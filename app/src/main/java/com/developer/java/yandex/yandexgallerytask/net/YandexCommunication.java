@@ -98,7 +98,7 @@ public class YandexCommunication {
                             final PhotoResponse photo = gson.fromJson(elem, PhotoResponse.class);
                             //
                             //mediatorLiveData.addSource(getLinks(auth, photo.path), newLink -> mediatorLiveData.setValue()
-                            final LiveData<String> liveLink = getLinks(auth, photo.path);
+                            final LiveData<String> liveLink = getLink(photo.path);
                             liveLink.observeForever(new Observer<String>() {
                                 @Override
                                 public void onChanged(@Nullable String s) {
