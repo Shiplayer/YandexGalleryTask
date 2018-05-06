@@ -9,6 +9,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.developer.java.yandex.yandexgallerytask.entity.PhotoResponse;
+import com.developer.java.yandex.yandexgallerytask.model.ResponseModel;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -20,6 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
@@ -34,7 +37,10 @@ import retrofit2.http.Headers;
 import retrofit2.http.Query;
 import retrofit2.http.QueryMap;
 
-
+/**
+ * class for getting information about images and getting an image from yandex disk with OAuth2
+ * @author Shiplayer
+ */
 public class YandexCommunication {
     private static Retrofit retrofit;
     private static YandexCommunication mYandexCommunication;
@@ -42,17 +48,26 @@ public class YandexCommunication {
     private static final String TAG = YandexCommunication.class.getSimpleName();
     private static String oAuth = null;
 
+    /**
+     * Initialize retrofit for communication with yandex disk, create client with timeout
+     * internet connection
+     */
     private YandexCommunication(){
-        retrofit = new Retrofit.Builder().baseUrl("https://cloud-api.yandex.net:443")
-                .addConverterFactory(GsonConverterFactory.create()).build();
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS).build();
+        retrofit = new Retrofit.Builder()
+                .baseUrl("https://cloud-api.yandex.net:443")
+                .addConverterFactory(GsonConverterFactory.create())
+                .client(client).build();
         apiCommunication = retrofit.create(ApiCommunication.class);
     }
 
-    private YandexCommunication(OkHttpClient client){
-        retrofit = new Retrofit.Builder().baseUrl("https://cloud-api.yandex.net:443")
-                .addConverterFactory(GsonConverterFactory.create()).client(client).build();
-        apiCommunication = retrofit.create(ApiCommunication.class);
-    }
+    /**
+     * Gets instance of YandexCommunication for interaction with yandex disk
+     * @return mYandexCommunication A instance of YandexCommunication
+     */
 
     public static YandexCommunication getInstance(){
         if(mYandexCommunication == null)
@@ -60,31 +75,28 @@ public class YandexCommunication {
         return mYandexCommunication;
     }
 
-    public static YandexCommunication setAuth(String auth){
+    /**
+     * Sets authentication for communication
+     * @param auth A String containing authentication
+     */
+
+    public static void setAuth(String auth){
         oAuth = "OAuth " + auth;
-        return mYandexCommunication;
     }
 
-    public static YandexCommunication getInstanceWithClient(final String auth){
-        OkHttpClient client = new OkHttpClient.Builder().addInterceptor(new Interceptor() {
-            @Override
-            public okhttp3.Response intercept(Chain chain) throws IOException {
-                return chain.proceed(chain.request()).newBuilder().addHeader("Authorization", "OAuth " + auth).build();
-            }
-        }).build();
-        oAuth = "OAuth " + auth;
-        if(mYandexCommunication == null)
-            mYandexCommunication = new YandexCommunication(client);
-        return mYandexCommunication;
-    }
+    /**
+     * Used retrofit for getting json object that contain information about images in
+     * directory "Фотокамера"
+     * @return List of PhotoResponse element wrapped in LiveData
+     */
 
-    public LiveData<List<PhotoResponse>> getPhotoResponses(){
+    public LiveData<ResponseModel<List<PhotoResponse>>> getPhotoResponses(){
+        Log.w(TAG, "getPhotoResponses");
         Map<String, String> map = new HashMap<>();
-        final MediatorLiveData<String> mediatorLiveData = new MediatorLiveData<>();
         map.put("path", "disk:/Фотокамера/");
         map.put("sort", "-modified");
-        map.put("limit", "200");
-        final MutableLiveData<List<PhotoResponse>> listLiveData = new MutableLiveData<>();
+        map.put("limit", "50");
+        final MutableLiveData<ResponseModel<List<PhotoResponse>>> listLiveData = new MutableLiveData<>();
         apiCommunication.getImages(map, oAuth).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -92,7 +104,7 @@ public class YandexCommunication {
                 Log.w(TAG, "header: " + call.request().header("Authorization"));
                 JsonObject body = response.body();
                 List<PhotoResponse> photoList;
-                if(body.has("_embedded")){
+                if(response.isSuccessful() && response.code() == 200 && body.has("_embedded")){
                     Gson gson = new GsonBuilder().create();
                     body = body.getAsJsonObject("_embedded");
                     photoList = new ArrayList<>();
@@ -101,23 +113,18 @@ public class YandexCommunication {
 
                         if(elem.getAsJsonObject().get("mime_type").getAsString().equals("image/jpeg")) {
                             final PhotoResponse photo = gson.fromJson(elem, PhotoResponse.class);
-                            //
-                            //mediatorLiveData.addSource(getLinks(auth, photo.path), newLink -> mediatorLiveData.setValue()
-                            final LiveData<String> liveLink = getLink(photo.path);
-                            liveLink.observeForever(new Observer<String>() {
-                                @Override
-                                public void onChanged(@Nullable String s) {
-                                    photo.link = s;
-                                    liveLink.removeObserver(this);
-                                }
-                            });
                             photoList.add(photo);
                         }
                     }
                     for(PhotoResponse photo : photoList){
                         Log.w(TAG, photo.toString());
                     }
-                    listLiveData.postValue(photoList);
+                    ResponseModel<List<PhotoResponse>> r = new ResponseModel<>(photoList);
+                    Log.w(TAG, r.toString());
+                    listLiveData.postValue(r);
+                } else{
+                    Log.e(TAG, response.message());
+                    listLiveData.postValue(new ResponseModel<List<PhotoResponse>>(null, response.message()));
                 }
             }
 
@@ -125,6 +132,7 @@ public class YandexCommunication {
             public void onFailure(Call<JsonObject> call, Throwable t) {
                 Log.w(TAG, "fail: " + t.getMessage() + "\nurl: " + call.request().url().toString()+
                 "\nheader: " + call.request().header("Authorization"));
+                listLiveData.postValue(new ResponseModel<List<PhotoResponse>>(null, t.getMessage()));
             }
         });
         return listLiveData;

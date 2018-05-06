@@ -64,7 +64,6 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
     @Override
     public void onBindViewHolder(final ViewHolder holder, final int position) {
         Log.w(TAG, "loading image " + urls.get(position).name);
-        final LiveData<String> liveLink = YandexCommunication.getInstance().getLink(urls.get(position).path);
         holder.progressBar.setVisibility(View.VISIBLE);
         /*holder.imageView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
@@ -85,21 +84,11 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
                 e.printStackTrace();
             }
         });
-
-        liveLink.observeForever(new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-
-                //Picasso.get().load(s).into(holder.imageView);
-                liveLink.removeObserver(this);
-            }
-        });
-
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(context, ImageViewActivity.class);
-                intent.putExtra("URL", urls.get(position).link);
+                intent.putExtra("URL", urls.get(position).file);
                 context.startActivity(intent);
             }
         });
