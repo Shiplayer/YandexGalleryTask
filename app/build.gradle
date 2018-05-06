@@ -20,6 +20,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:support-v4:27.1.1'
     compile 'com.tickaroo.tikxml:retrofit-converter:0.8.13'
     compile 'com.tickaroo.tikxml:annotation:0.8.13'
     compile 'com.tickaroo.tikxml:core:0.8.13'

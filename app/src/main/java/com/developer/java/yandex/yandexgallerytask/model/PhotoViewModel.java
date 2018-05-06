@@ -2,6 +2,7 @@ package com.developer.java.yandex.yandexgallerytask.model;
 
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MediatorLiveData;
+import android.arch.lifecycle.MutableLiveData;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModel;
 import android.support.annotation.Nullable;
@@ -13,33 +14,38 @@ import com.developer.java.yandex.yandexgallerytask.net.YandexCommunication;
 import java.util.List;
 
 public class PhotoViewModel extends ViewModel {
-    private static final String TAG = PhotoViewModel.class.getCanonicalName();
-    private LiveData<List<PhotoResponse>> data;
-    private MediatorLiveData<String> links = new MediatorLiveData<>();
+    private MutableLiveData<ResponseModel<List<PhotoResponse>>> data;
+    private String text;
 
-    public LiveData<List<PhotoResponse>> getPhotoResponses(){
-        return data;
-    }
-
-    public LiveData<List<PhotoResponse>> getPhotoResponses(String auth){
+    public LiveData<ResponseModel<List<PhotoResponse>>> getPhotoResponses(){
         if(data == null){
-            data = YandexCommunication.getInstanceWithClient(auth).getPhotoResponses();
+            data = new MutableLiveData<>();
+            download();
         }
         return data;
     }
 
-    public MediatorLiveData<String> getLinkImage(List<String> list) {
+    private void download(){
+        final LiveData<ResponseModel<List<PhotoResponse>>> live = YandexCommunication.getInstance().getPhotoResponses();
+        live.observeForever(new Observer<ResponseModel<List<PhotoResponse>>>() {
+            @Override
+            public void onChanged(@Nullable ResponseModel<List<PhotoResponse>> listResponseModel) {
+                data.postValue(listResponseModel);
+                live.removeObserver(this);
+            }
+        });
+    }
 
-        for (int i = 0; i < list.size(); i++) {
-            Log.e(TAG, String.valueOf(YandexCommunication.getInstance().getLink(list.get(i)) == null));
-            links.addSource(YandexCommunication.getInstance().getLink(list.get(i)), new Observer<String>() {
-                @Override
-                public void onChanged(@Nullable String s) {
-                    links.setValue(s);
-                }
-            });
-        }
+    public void updatePhotoResponses(){
+        download();
+        Log.w("PhotoViewModel", data.toString());
+    }
 
-        return links;
+    public void setText(String str){
+        text = str;
+    }
+
+    public String getText(){
+        return text;
     }
 }
