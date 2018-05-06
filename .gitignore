@@ -2,6 +2,7 @@
 *.apk
 *.ap_
 output.json
+!YandexGalleryTask-release.apk
 
 # Files for the ART/Dalvik VM
 *.dex
