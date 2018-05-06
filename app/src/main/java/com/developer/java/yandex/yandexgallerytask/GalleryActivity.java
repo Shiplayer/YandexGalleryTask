@@ -1,6 +1,5 @@
 package com.developer.java.yandex.yandexgallerytask;
 
-import android.arch.lifecycle.MediatorLiveData;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
@@ -9,9 +8,6 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -28,7 +24,6 @@ import com.developer.java.yandex.yandexgallerytask.model.PhotoViewModel;
 import com.developer.java.yandex.yandexgallerytask.model.ResponseModel;
 import com.developer.java.yandex.yandexgallerytask.net.YandexCommunication;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static android.content.Intent.ACTION_MAIN;
@@ -51,7 +46,6 @@ public class GalleryActivity extends AppCompatActivity{
     public void init() {
         sharedPreferences = getPreferences(Context.MODE_PRIVATE);
         model = ViewModelProviders.of(this).get(PhotoViewModel.class);
-        model.setText("hello");
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -59,13 +53,10 @@ public class GalleryActivity extends AppCompatActivity{
         RecyclerView recyclerView = findViewById(R.id.rv_image);
 
         handleAction();
-        Log.w(TAG, "start main activity");
 
         String token = getToken();
         if(!token.isEmpty()) {
             YandexCommunication.setAuth(token);
-            //YandexCommunication.getInstance().getInfo();
-            //YandexCommunication.getInstance().lastUpdated();
             final GalleryAdapter galleryAdapter = new GalleryAdapter(this, token);
             recyclerView.setAdapter(galleryAdapter);
             recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
@@ -74,15 +65,15 @@ public class GalleryActivity extends AppCompatActivity{
             model.getPhotoResponses().observe(this, new Observer<ResponseModel<List<PhotoResponse>>>() {
                 @Override
                 public void onChanged(@Nullable ResponseModel<List<PhotoResponse>> listResponseModel) {
-                    Log.w(TAG, "onChange " + listResponseModel.toString());
                     if(listResponseModel != null &&listResponseModel.isSuccessful()){
                         galleryAdapter.setData(listResponseModel.getResponse());
                         mProgressBar.setVisibility(View.GONE);
-                        Log.w(TAG, "onChanged");
                     }
                     else if(listResponseModel != null){
-                        Log.w(TAG, listResponseModel.getError());
                         ErrorFragmentDialog dialog = new ErrorFragmentDialog();
+                        Bundle bundle = new Bundle();
+                        bundle.putString("message", listResponseModel.getError());
+                        dialog.setArguments(bundle);
                         dialog.show(getSupportFragmentManager(), "error");
                     }
                 }
@@ -120,7 +111,6 @@ public class GalleryActivity extends AppCompatActivity{
             Intent intent = new Intent(ACTION_VIEW);
             intent.setData(Uri.parse(url));
             startActivity(intent);
-            Log.w(TAG, "startActivity");
         }
         return token;
     }
@@ -130,12 +120,6 @@ public class GalleryActivity extends AppCompatActivity{
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_gallery, menu);
         return true;
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        Log.w(TAG, "(requestCode, resultCode) = " + "(" + requestCode + ", " + resultCode + ")");
     }
 
     @Override
@@ -153,31 +137,4 @@ public class GalleryActivity extends AppCompatActivity{
 
         return super.onOptionsItemSelected(item);
     }
-
-    /*@Override
-    public void setOnHandle() {
-        List<PhotoResponse> list = model.getPhotoResponses().getValue();
-        if(list == null)
-            return;
-        List<String> link = new ArrayList<>();
-        for(PhotoResponse photo : list){
-            link.add(photo.path.split(":/")[1]);
-        }
-        final List<String> urlLinks = new ArrayList<>();
-        final int sizeOfList = list.size();
-        final MediatorLiveData<String> mediator = model.getLinkImage(link);
-        mediator.observeForever(new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String s) {
-                urlLinks.add(s);
-                if(urlLinks.size() == sizeOfList)
-                    mediator.removeObserver(this);
-            }
-        });
-        // уведомляем адаптор об изменении данных и используем пикасо, чтоб загрузить картинку просто используя полученный url
-
-        for(String s : urlLinks){
-            Log.w(TAG + "Mediator", s);
-        }
-    }*/
 }

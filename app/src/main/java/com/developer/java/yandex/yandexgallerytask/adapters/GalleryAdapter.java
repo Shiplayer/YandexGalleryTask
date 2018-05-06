@@ -1,11 +1,7 @@
 package com.developer.java.yandex.yandexgallerytask.adapters;
 
-import android.arch.lifecycle.LiveData;
-import android.arch.lifecycle.Observer;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -17,7 +13,6 @@ import android.widget.ProgressBar;
 import com.developer.java.yandex.yandexgallerytask.ImageViewActivity;
 import com.developer.java.yandex.yandexgallerytask.R;
 import com.developer.java.yandex.yandexgallerytask.entity.PhotoResponse;
-import com.developer.java.yandex.yandexgallerytask.net.YandexCommunication;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.OkHttp3Downloader;
 import com.squareup.picasso.Picasso;
@@ -38,13 +33,11 @@ import okhttp3.Response;
 public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHolder> {
     private static final String TAG = GalleryAdapter.class.getSimpleName();
     List<PhotoResponse> urls = new ArrayList<>();
-    private String auth;
     private OkHttpClient client;
     private Picasso picasso;
     private Context context;
 
     public GalleryAdapter(Context context, final String auth){
-        this.auth = auth;
         this.context = context;
         client = new OkHttpClient.Builder().addInterceptor(new Interceptor() {
             @Override
@@ -63,15 +56,7 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, final int position) {
-        Log.w(TAG, "loading image " + urls.get(position).name);
         holder.progressBar.setVisibility(View.VISIBLE);
-        /*holder.imageView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                holder.imageView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                picasso.load(urls.get(position).preview).resize(0, holder.imageView.getHeight()).into(holder.imageView);
-            }
-        });*/
         picasso.load(urls.get(position).preview).fit().centerInside().into(holder.imageView, new Callback() {
             @Override
             public void onSuccess() {
@@ -112,7 +97,6 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
 
     public void setData(List<PhotoResponse> data){
         Log.w(TAG, "setData");
-        //Log.w(TAG, String.valueOf(data));
         urls = data;
         notifyDataSetChanged();
     }
@@ -120,12 +104,5 @@ public class GalleryAdapter extends RecyclerView.Adapter<GalleryAdapter.ViewHold
     public void addData(List<PhotoResponse> data){
         urls.addAll(data);
         notifyItemRangeChanged(urls.size() - data.size() - 1, data.size());
-    }
-
-    public interface OnStateListener{
-        public void shutdown();
-        public void downloading();
-        public void downloaded();
-        public void setResultIntoView(Bitmap bitmap);
     }
 }

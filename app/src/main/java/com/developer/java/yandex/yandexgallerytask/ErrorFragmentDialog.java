@@ -15,7 +15,6 @@ import com.developer.java.yandex.yandexgallerytask.model.PhotoViewModel;
 
 public class ErrorFragmentDialog extends DialogFragment {
     private TextView mTitleError;
-    private TextView mContentError;
     private PhotoViewModel model;
 
     @Override
@@ -27,13 +26,12 @@ public class ErrorFragmentDialog extends DialogFragment {
 
         View view = layoutInflater.inflate(R.layout.dialog_error, null);
         mTitleError = view.findViewById(R.id.tv_title_error);
-        //mContentError = view.findViewById()
+        mTitleError.setText(getArguments().getString("message"));
         builder.setView(view);
 
         builder.setPositiveButton("refresh", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                Log.w("ErrorFragmentDialog", model.getText());
                 model.updatePhotoResponses();
             }
         });

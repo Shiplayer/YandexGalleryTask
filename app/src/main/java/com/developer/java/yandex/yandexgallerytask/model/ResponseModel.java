@@ -1,7 +1,5 @@
 package com.developer.java.yandex.yandexgallerytask.model;
 
-import android.arch.lifecycle.MutableLiveData;
-
 public class ResponseModel<T>{
     private String mError;
     private T mResponse;
